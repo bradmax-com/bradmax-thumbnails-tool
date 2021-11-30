@@ -1,4 +1,6 @@
-# bradmax thumbnails tool
+___
+![Bradmax][bradmaxLogo]
+# thumbnails tool
 
 <br/>
 
@@ -45,3 +47,5 @@ $ thumbnails.sh -spritesheets -poster -i /input/video.mp4 -o /output/directory -
 
 [ffmpeg]: https://www.ffmpeg.org/
 [ffprobe]: https://ffmpeg.org/ffprobe.html
+
+[bradmaxLogo]: ./assets/md/bradmax.svg
