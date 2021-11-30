@@ -1,7 +1,8 @@
 # bradmax thumbnails tool
 
 <br/>
-Shell script to generate thumbnail images from video file with vtt file as thumbnails descriptor. 
+
+Shell script to generate thumbnail images from video file with vtt file as thumbnails descriptor.
 Require [ffmpeg][ffmpeg] and [ffprobe][ffprobe] to be installed.
 <br/>
 <br/>
@@ -29,7 +30,7 @@ There are two wasy to generate thumbnails for video file:
 *```--help (-h)```* - display help message.
 
 ### Note:
-When flag *-spritesheets* is enabled script will probe video file to find best match for image grid dimmentions based on provided video file duration and *--timespan* option value. 
+When flag *-spritesheets* is enabled script will probe video file to find best match for image grid dimmentions based on provided video file duration and *--timespan* option value.
 Then You will need to choose one of proposed grid sizes.
 Best grid sizes are ones that do not have unused thumbnail spaces. For example if video duration is 30 seconds, thumbnails *-timespan* set to 10 (seconds) and choosed grid size is 2x2, then 1 thumbnail space will be unused, because (30s / 10s) = 3, but 2x2 = 4,
 <br/>
