@@ -39,7 +39,11 @@ Best grid sizes are ones that do not have unused thumbnail spaces. For example i
 
 ### Usage:
 ```
-$ thumbnails.sh -spritesheets -poster -i /input/video.mp4 -o /output/directory -w 160 -t 10 --vtt-name thumbnails --img-dir images/directory --img-name image-file-name
+$ thumbnails.sh -i /input/video.mp4 -o /output/directory
+```
+or:
+```
+$ thumbnails.sh -thumbnails -poster -i /input/video.mp4 -o /output/directory -w 160 -t 10 --vtt-name thumbnails --img-dir thumbs --img-name thumb
 ```
 <br/>
 

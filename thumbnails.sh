@@ -22,9 +22,24 @@ declare +i -r RESET='\033[0m';
 ####################################################
 # print header
 ####################################################
-echo "${BLUE}####################################################${RESET}";
-echo "\nbradmax thumbnails tool\n\n${CYAN}https://bradmax.com${RESET}\n" 1>&2;
-echo "${BLUE}####################################################${RESET}";
+print_header() {
+	echo "${BLUE}####################################################";
+	echo "  _                   _                      ";
+	echo " | |                 | |                     ";
+	echo " | |__  _ __ __ _  __| |_ __ ___   __ ___  __";
+	echo " | '_ \| '__/ _\` |/ _\` | '_ \` _ \ / _\` \ \/ /";
+	echo " | |_) | | | (_| | (_| | | | | | | (_| |>  < ";
+	echo " |_.__/|_|  \__,_|\__,_|_| |_| |_|\__,_/_/\_\\";
+	echo "                                             ";
+	echo " ${CYAN}https://bradmax.com${RESET}          ";
+	echo "                                             ";
+	echo "${BLUE}####################################################${RESET}";
+}
+
+# RUN
+#
+print_header;
+
 ####################################################
 # check if ffmpeg is available
 ####################################################
@@ -117,8 +132,9 @@ while [[ "$#" -gt 0 ]]; do
 		*) help; echo "${RED}ERROR: Unexpected option: $1" 1>&2; exit 0;;
 	esac
 done
+
 ####################################################
-# check if input option is provided
+# update file name
 ####################################################
 if [[ -z "${FILE_NAME}" ]]; then
 	if [ $MODE -eq $SPRITESHEET_MODE ]; then FILE_NAME="spritesheet"; fi
@@ -135,14 +151,38 @@ if [[ -z "${INPUT}" ]]; then
 	exit 0;
 fi
 ####################################################
-# check if input option is provided
+# check if input is valid file
+####################################################
+if [[ -d "${INPUT}" ]]; then
+	help;
+	echo "${RED}ERROR: --input (-i) should be file not directory path${RESET}" 1>&2;
+	exit 0;
+fi
+if [[ -f "${INPUT}" ]]; then void; else
+	help;
+	echo "${RED}ERROR: --input (-i) option not valid file path${RESET}" 1>&2;
+	exit 0;
+fi
+
+
+####################################################
+# check if output option is provided
 ####################################################
 if [[ -z "${OUTPUT}" ]]; then
 	help;
 	echo "${RED}ERROR: --output (-o) option not provided${RESET}" 1>&2;
 	exit 0;
 fi
-
+if [[ -f "${OUTPUT}" ]]; then
+	help;
+	echo "${RED}ERROR: --output (-o) should be directory path not file path${RESET}" 1>&2;
+	exit 0;
+fi
+# if [[ -d "${OUTPUT}" ]]; then void; else
+# 	help;
+# 	echo "${RED}ERROR: --output (-o) option not valid directory path${RESET}" 1>&2;
+# 	exit 0;
+# fi
 ########################################################################################################
 # PROBE
 ########################################################################################################
