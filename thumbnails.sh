@@ -1,4 +1,4 @@
-#!/usr/bin/zsh
+#!/usr/bin/env zsh
 
 ########################################################################################################
 #
@@ -68,13 +68,15 @@ declare +i POSTER_NAME;
 declare +i IMG_DIR;
 declare +i IMG_NAME;
 declare +i VTT_NAME;
+declare -i GENERATE_ROWS=6;
+declare -i GENERATE_COLUMNS=5;
 
 ########################################################################################################
 # HELPERS
 ########################################################################################################
 
 void() {
-	continue;
+	#pass
 }
 
 divide() {
@@ -100,6 +102,8 @@ help() {
  	echo "  --vtt-name \t\t ${DGRAY}(optional)${RESET} Override base name (-n) for VTT file. When provided generated vtt file path will be '[--output]/[--vtt-name].vtt'.";
  	echo "  --img-name \t\t ${DGRAY}(optional)${RESET} Override base name (-n) for image files. When provided generated images path will be '[--output]/[--img-name].jpg'.";
  	echo "  --img-dir \t\t ${DGRAY}(optional)${RESET} Base dir for image files. When provided generated images path will be '[--output]/[--img-dir]/[--(img-)name].jpg'.";
+	echo "  --ss-cols \t\t ${DGRAY}(optional)${RESET} Number of image columns for spritesheets (default 6).";
+	echo "  --ss-rows \t\t ${DGRAY}(optional)${RESET} Number of image rows for spritesheets (default 5).";
 	echo "  -h ${DGRAY}|${RESET} --help \t\t ${DGRAY}(optional)${RESET} Displays this message.";
 	echo "\n------------------------------------------------\n";
 	echo "${GREEN} Usage: ${RESET} $ thumbnails.sh -i /input/video.mp4 -o /output/directory [-w <number>] [-t <number>] [-n <string>] [-r <number>] [-c <number>]${DGRAY}\n";
@@ -118,15 +122,17 @@ while [[ "$#" -gt 0 ]]; do
 		-spritesheets) MODE=$SPRITESHEET_MODE; shift;;
 		-thumbnails) MODE=$THUMBNAILS_MODE; shift;;
 		-poster) WITH_POSTER=1; shift;;
-		-i | --input) INPUT="$2" shift 2;;
-		-o | --output) OUTPUT="$2" shift 2;;
-		-n | --name) FILE_NAME="$2" shift 2;;
-		-t | --timespan) TIMESPAN="$2" shift 2;;
-		-w | --width) WIDTH="$2" shift 2;;
+		-i | --input) INPUT="$2"; shift 2;;
+		-o | --output) OUTPUT="$2"; shift 2;;
+		-n | --name) FILE_NAME="$2"; shift 2;;
+		-t | --timespan) TIMESPAN="$2"; shift 2;;
+		-w | --width) WIDTH="$2"; shift 2;;
 		# -s | --grid-size) GRID_SIZE="$2" shift 2;;
-		--img-dir) IMG_DIR="$2" shift 2;;
-		--img-name) IMG_NAME="$2" shift 2;;
-		--vtt-name) VTT_NAME="$2" shift 2;;
+		--img-dir) IMG_DIR="$2"; shift 2;;
+		--img-name) IMG_NAME="$2"; shift 2;;
+		--vtt-name) VTT_NAME="$2"; shift 2;;
+		--ss-cols) GENERATE_COLUMNS="$2"; shift 2;;
+		--ss-rows) GENERATE_ROWS="$2"; shift 2;;
 		-h | --help) help; exit 0;;
 		--) shift; break;;
 		*) help; echo "${RED}ERROR: Unexpected option: $1" 1>&2; exit 0;;
@@ -251,6 +257,7 @@ print_options() {
 	echo "time span ${DGRAY}(-t)${RESET}: \t\t ${TIMESPAN} ${DGRAY}(in seconds)${RESET}";
 	echo "time span tbr : \t\t ${TIMESPAN_TBR}";
 	echo "thumbnails to generate: \t ${THUMBS_TO_GENERATE}";
+	echo "sprite size: \t\t\t ${GENERATE_ROWS}x${GENERATE_COLUMNS}";
 	# echo "output dir ${DGRAY}(-o)${RESET}: \t\t ${OUTPUT}";
 	if [[ $MODE -eq $SPRITESHEET_MODE ]]; then echo "max grid size: \t\t\t ${GRID_SIZE}x${GRID_SIZE}"; fi
 }
@@ -284,149 +291,17 @@ print_generate_data() {
 ########################################################################################################
 
 if [[ $MODE -eq $SPRITESHEET_MODE ]]; then
-	declare -i GENERATE_ROWS;
-	declare -i GENERATE_COLUMNS;
 	declare -r -i SCORE_MAX=$((GRID_SIZE * GRID_SIZE));
 	declare -r -i SCORE_BASE=$((SCORE_MAX * SCORE_MAX));
 	declare -r -i SCORE_BEST=$((SCORE_BASE / 10));
 	declare -r -i SCORE_GOOD=$((SCORE_BEST / 10));
 	declare -r -i SCORE_STEP=$((SCORE_GOOD / 10));
 	declare +i -a GRID_DATA=();
-	declare -i -a GRID_UNIQE_DATA=();
-	_calculate_grid() {	# $1 - rows. $2 - columns.
-		local -r -i rows=$1;
-		local -r -i cols=$2;
-		local -r -i sprite_tiles=$(( ($rows * $cols) ));
-		local -r -i sheets=$(divide $THUMBS_TO_GENERATE $sprite_tiles);
-		local -r -i total_tiles=$(( $sheets * $sprite_tiles ));
-		local -r -i wasted=$(( $total_tiles - $THUMBS_TO_GENERATE ));
-		local -r -i uniqe="${rows}${cols}";
-		local -r -i uniqeR="${cols}${rows}";
-		local -i wasted_score=$(( (SCORE_MAX - wasted) ));
-		local -i sheets_score=$(( (GRID_SIZE - sheets) ));
-		local -i score=$((wasted_score + sheets_score));
-		# lowest space wasted
-		if [[ $wasted -eq 0 ]]; then ((score=score+SCORE_GOOD)); fi
-		# lowest image files
-		if [[ $sheets -lt 10 ]]; then ((score=score+SCORE_STEP)); fi
-		# lowest space wasted & image files
-		if [[ $wasted -le 1 && $sheets -eq 1 ]]; then ((score=score+SCORE_BEST)); fi
-		local -r -i position="$(( $SCORE_BASE - $score ))";
-		# # check if already collected
-		if [[ (${GRID_UNIQE_DATA[@]} =~ $uniqe) || (${GRID_UNIQE_DATA[@]} =~ $uniqeR) ]]; then
-			void;
-		# check if wasted is lower than given rows or cols
-		else
-			if [[ $wasted -lt $(divide $rows 2) || $wasted -lt $(divide $cols 2) ]]; then
-				GRID_DATA+=("$position:$score:$wasted:$sheets:$rows:$cols:$sprite_tiles");
-				GRID_UNIQE_DATA+=($uniqe);
-				GRID_UNIQE_DATA+=($uniqeR);
-			fi
-		fi
-	}
-	_print_grid() {	# $1 - parsed_grids index.
-		local -r -a -i grid=(${parsed_grids[$1]//:/ }); # "$position:$score:$wasted:$sheets:$rows:$cols:$sprite_tiles"
-		local -r -i position=${grid[0]};
-		local -r -i score=${grid[1]};
-		local -r -i wasted=${grid[2]};
-		local -r -i sheets=${grid[3]};
-		local -r -i rows=${grid[4]};
-		local -r -i cols=${grid[5]};
-		# local -r -i sprite_tiles=${grid[6]};
-		local +i wasted_color=$RESET;
-		local +i sheetes_color=$RESET;
-		local +i size_color=$RESET;
-		# local +i opt_color=$DGRAY;
-		local +i comment_color=$DGRAY;
-		local +i comment="";
-		local +i color=$RESET;
-		# best option
-		if [[ $score -ge SCORE_BEST ]]; then
-			color=$YELLOW;
-			opt_color=$color;
-			size_color=$color;
-			sheetes_color=$color;
-			wasted_color=$color;
-			comment_color=$color;
-			comment="${color}$comment best option";
-		# good option
-		elif [[ $score -ge SCORE_GOOD ]]; then
-			color=$GREEN;
-			opt_color=$color;
-			size_color=$color;
-			sheetes_color=$color;
-			wasted_color=$color;
-			comment_color=$color;
-			comment="${color}$comment good option${RESET}";
-			if [[ $sheets -ge 2 ]]; then comment="$comment but ${sheets} image files"; fi
-		fi
-		local -r +i c1="${opt_color}$1)";
-		local -r +i c2="${DGRAY}size: ${size_color}${rows}x${cols}";
-		local -r +i c3="${DGRAY}sprite images: ${sheetes_color}${sheets}";
-		local -r +i c4="${DGRAY}blank thumbs: ${wasted_color}${wasted} ";
-		local -r +i c5="${comment_color}${comment}";
-		echo "${c1}\t${c2}\t${c3}\t${c4}\t${c5}${RESET}";
-		unset wasted_color;
-		unset sheetes_color;
-		unset size_color;
-		unset opt_color;
-		unset comment_color;
-		unset comment;
-	}
-	_setup_grid() {
-		local -r -i choosen_idx=$1;
-		local -r -i choose_max=$2;
-
-		if [[ $choosen_idx -le $choose_max ]]; then
-			local -r -a -i grid=(${parsed_grids[$choosen_idx]//:/ });
-			GENERATE_ROWS=${grid[4]};
-			GENERATE_COLUMNS=${grid[5]};
-		else
-			echo "STOP: choosen option [$choosen_idx] do not exist, max is $choose_max.";
-			exit 0;
-		fi
-	}
-	_choose_best_grid_for() {
-		local -r -i from=2;
-		local -r -i to=$GRID_SIZE;
-		GRID_UNIQE_DATA=();
-		for row in `seq $from $to`;	do
-			for col in `seq $from $to`; do
-				_calculate_grid $row $col;
-			done
-		done
-		unset GRID_UNIQE_DATA;
-		# sort
-		IFS=$'\n' parsed_grids=($(sort <<<"${GRID_DATA[*]}")); unset IFS;
-		# print
-		local -r -i total=${#parsed_grids[@]};
-		for (( i = 0; i <$total; ++i )); do _print_grid $i; done
-		# ask
-		local -r -i choose_max=$(($total - 1));
-		echo "${YELLOW}\nPlease pick best grid size option${RESET}\n${RESET}(enter number from 0 to $choose_max, or press 'enter' to choose 0):" 1>&2;
-		while true; do read -p "" choosen_idx;
-			case $choosen_idx in
-			"")
-				_setup_grid 0 $choose_max;
-				break;;
-			*[0-9] )
-				_setup_grid $choosen_idx $choose_max;
-				break;;
-			*)
-				echo "STOP: choosen option [$choosen_idx] do not exist";
-				exit 0;
-			esac
-		done
-		unset parsed_grids;
-	};
-
+	declare -a GRID_UNIQE_DATA=();
 	# RUN
 	#
 
 	# print
-	echo "\n${YELLOW}-- choose best grid size for ${THUMBS_TO_GENERATE} thumbnails ===========${RESET}\n";
-	# choose
-	_choose_best_grid_for;
 	declare -r -i THUMBS_PER_SPRITE=$(( ($GENERATE_ROWS * $GENERATE_COLUMNS) ));
 	declare -r -i SPRITES_TO_GENERATE=$(divide $THUMBS_TO_GENERATE $THUMBS_PER_SPRITE);
 	declare -r -i SPRITES_THUMB_SPACE_AVAILABLE=$(( ($SPRITES_TO_GENERATE * $THUMBS_PER_SPRITE) ));
@@ -450,7 +325,7 @@ _make_output_dir() {
 # sample thumbnail size
 ####################################################
 _sample_thumbnail_size() {
-	ffmpeg -v $FFMPEG_LOG_LEVEL -i $INPUT -ss 00:00:00.0001 -y -an -sn -vsync 0 -q:v 5 -threads 1 -vf scale=$WIDTH:-1,select="not(mod(n\\,$TIMESPAN_TBR))" -frames:v 1 $SAMPLE_OUTPUT; 2>&1;
+	ffmpeg -v $FFMPEG_LOG_LEVEL -i $INPUT -ss 00:00:00.0001 -y -an -sn -vsync 0 -q:v 5 -threads 1 -vf scale=$WIDTH:-1,select="not(mod(n\\,$TIMESPAN_TBR))" -frames:v 1 $SAMPLE_OUTPUT;
 	_set_thumbnail_size_from_image $SAMPLE_OUTPUT;
 	rm -f $SAMPLE_OUTPUT;
 }
@@ -644,24 +519,11 @@ _generate() {
 	echo "${CYAN}------------------------${RESET}";
 	echo "\n${GREEN}SUCCESS !${RESET}\n";
 }
-ask_to_generate() {
-	echo "\n${CYAN}Do you wish to generate tumbnails ?${RESET}\n${RESET}(enter y|n or press 'enter' to continue): ";
-	while true; do read -p "" yn;
-		case $yn in
-			"" ) _generate; break;;
-			*[Yy] ) _generate; break;;
-			*[Yy][Ee][Ss] ) _generate; break;;
-			*[Nn] ) echo "STOP"; exit;;
-			*[Nn][Oo] ) echo "STOP"; exit;;
-			* ) echo "Please answer yes[y] or no[n].";;
-		esac
-	done
-}
 
 # RUN
 #
 print_generate_data;
-ask_to_generate;
+_generate;
 #
 exit 0;
 ########################################################################################################
