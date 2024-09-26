@@ -29,6 +29,8 @@ There are two wasy to generate thumbnails for video file:
 *```--vtt-name```* - [string] override base name (-n) for VTT file. When provided generated vtt file path will be "[*--output*]/[*--vtt-name*].vtt".<br/>
 *```--img-name```* - [string] override base name (-n) for image files. When provided generated images path will be "[*--output*]/[*--img-name*].jpg".<br/>
 *```--img-dir```* - [string] base dir for image files. When provided generated images path will be "[*--output*]/[*--img-dir*]/[*--(img-)name*].jpg".<br/>
+*```--ss-cols```* - [integer] (optional) Number of image columns for spritesheets (default 6).
+*```--ss-rows```* - [integer] (optional) Number of image rows for spritesheets (default 5).
 *```--help (-h)```* - display help message.
 
 ### Note:
