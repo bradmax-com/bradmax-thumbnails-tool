@@ -196,7 +196,7 @@ fi
 ####################################################
 # probe duration and fps data from video
 ####################################################
-eval $(ffprobe -v $FFMPEG_LOG_LEVEL -show_format -of flat=s=_ -show_entries stream=duration,r_frame_rate $INPUT);
+eval $(ffprobe  -v $FFMPEG_LOG_LEVEL -select_streams v:0 -show_format -of flat=s=_ -show_entries stream=duration,r_frame_rate $INPUT);
 declare -r -i TBR=${streams_stream_0_r_frame_rate};
 declare -r +i EXACT_DURATION=${format_duration};
 declare -r -i DURATION=${format_duration%.*};
@@ -217,7 +217,7 @@ declare +i IMG_SUFFIX;
 ####################################################
 # update IMG_OUTPUT
 ####################################################
-_update_img_output() { # $1 - sprites to geierate (number)
+_update_img_output() { # $1 - sprites to generate (number)
 	local -r -i sprites=$1;
 	IMG_SUFFIX="-%06d";
 	if [[ $sprites -eq 1 ]]; then
@@ -405,17 +405,19 @@ _create_vtt() {
 		fi
 		# spritesheet
 		if [[ $MODE -eq $SPRITESHEET_MODE ]]; then
-			if [[ $sprite_counter -gt $THUMBS_PER_SPRITE ]]; then
-				((sprite_counter=0))
-				((sprite_num++))
-			fi
+			#  next column
 			if [[ $row -ge $GENERATE_ROWS ]]; then
 				((row=0));
 				((column++));
 				((x=0));
 				((y=y+HEIGHT));
-			else
-				((row++))
+			fi
+			# next sprite
+			if [[ $sprite_counter -gt $THUMBS_PER_SPRITE ]]; then
+				((sprite_counter=0))
+				((sprite_num++))
+				((x=0));
+				((y=0));
 			fi
 		# thumbnails
 		elif [[ $MODE -eq $THUMBNAILS_MODE ]]; then
@@ -446,6 +448,7 @@ _create_vtt() {
 			((sprite_counter++))
 			((x=x+WIDTH))
 		fi
+		((row++))
 	done
 }
 ####################################################
